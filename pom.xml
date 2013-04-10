@@ -90,7 +90,17 @@
 		<groupId>com.amazonaws</groupId>
 		<artifactId>aws-java-sdk</artifactId>
 		<version>1.4.1</version>
-	</dependency>
+		<exclusions>
+            <exclusion>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-core-asl</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-mapper-asl</artifactId>
+            </exclusion>
+        </exclusions>
+  	</dependency>
   </dependencies>
   
   <build>
