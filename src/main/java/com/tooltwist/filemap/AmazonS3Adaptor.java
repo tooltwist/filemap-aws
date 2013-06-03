@@ -172,8 +172,12 @@ public class AmazonS3Adaptor implements IFileGroupAdaptor {
         		key = key.substring(1);	
         	
         	//include only if obect is not subfolder.
-        	if (!key.equals("") && !key.endsWith("/"))
-        		result.add(key);
+        	if (!key.equals("") && !key.endsWith("/")) {
+        		if (!directoryRelativePath.endsWith("/"))
+        			directoryRelativePath += "/";
+        		result.add(directoryRelativePath + key);
+        	}
+        		
         	
         }
 
