@@ -1,0 +1,217 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'artifactory'
+apply plugin: 'maven' // so a POM file can be uploaded to repo
+
+
+//----------------------------------------------------------------------
+// Gradle lacks the "provided" dependency so we'll have to add it.
+// http://blog.codeaholics.org/2012/emulating-mavens-provided-scope-in-gradle/
+configurations {
+	provided
+} 
+sourceSets {
+    main.compileClasspath += configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+}
+//eclipse.classpath.plusConfigurations += configurations.provided
+//----------------------------------------------------------------------
+
+
+
+dependencies {
+	
+	/* Dependencies if you have ToolTwist source code installed.
+	compile project(':xdata')
+	compile project(':filemap')
+	compile project(':tooltwist')
+	compile project(':ttWbd')
+	compile project(':ttStd')
+	*/
+
+	/* ToolTwist Dependencies
+	compile group: 'com.tooltwist', name: 'tooltwist', version: TOOLTWIST_VERSION
+	compile group: 'com.tooltwist', name: 'ttStd', version: TOOLTWIST_VERSION
+	compile group: 'com.tooltwist', name: 'ttWbd', version: TOOLTWIST_VERSION
+	//compile 'com.tooltwist:ttWbd:8.3.3-SNAPSHOT@sources'
+	*/
+
+	compile group: 'com.tooltwist', name: 'filemap', version: '5.0-SNAPSHOT'
+	compile	group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.4.1'
+
+	// Project dependencies
+/*
+	compile group: 'net.sourceforge.htmlcleaner', name: 'htmlcleaner', version: '2.2'
+	compile group: 'org.xhtmlrenderer', name: 'core-renderer', version: 'R8pre2'
+	compile group: 'org.json', name: 'json', version: '20140107'
+	compile group: 'net.sf.ehcache', name: 'ehcache-core', version: '2.6.0'
+	compile group: 'javax.xml', name: 'jaxrpc', version: '1.1'
+	compile group: 'org.apache.axis2', name: 'axis2', version: '1.5.4'
+	compile group: 'commons-discovery', name: 'commons-discovery', version: '0.2'
+
+	// This jar contains stubs used only while compiling. At runtime the
+	// web server (e.g. Tomcat) provides the real implementation of the API.
+	provided 'javax:javaee-api:6.0'
+*/
+
+	// Include only while testing
+	testCompile group: 'junit', name: 'junit', version: '4.8.2'
+}
+
+
+/**************************************************************************************************
+ *
+ *	NOTE: Standard code from here on down. (Phil-2014-11-25)
+ *
+ *	Values defined in ./gradle.properties:
+ *		PROJECT_GROUP
+ *		PROJECT_VERSION
+ *		PROJECT_SOURCE_COMPATIBILITY
+ *		PUBLISH_CONTEXTURL
+ *		PUBLISH_SNAPSHOT_REPO
+ *		PUBLISH_RELEASE_REPO
+ *
+ *	Values defined in ~/.gradle/gradle.properties:
+ *		RESOLVE_CONTEXTURL
+ *		RESOLVE_REPO
+ *		ARTIFACTORY_USER
+ *		ARTIFACTORY_PASSWORD
+ */
+group = PROJECT_GROUP
+version = PROJECT_VERSION
+sourceCompatibility = PROJECT_SOURCE_COMPATIBILITY
+
+// Remember whether this is a snapshot or release, so we publish to the correct repository.
+project.ext.isSnapshot = version.endsWith("-SNAPSHOT")
+
+// Include jars for the artifactory plugin
+buildscript {
+    repositories {
+        maven { url 'http://jcenter.bintray.com' }
+    }
+    dependencies {
+        classpath(group: 'org.jfrog.buildinfo', name: 'build-info-extractor-gradle', version: '2.0.9')
+    }
+}
+
+configurations {
+        published
+}
+
+artifactory {
+    publish {
+      repository {
+        contextUrl = "${PUBLISH_CONTEXTURL}"
+        repoKey = isSnapshot ? "${PUBLISH_SNAPSHOT_REPO}" : "${PUBLISH_RELEASE_REPO}"
+        username = "${ARTIFACTORY_USER}"
+        password = "${ARTIFACTORY_PASSWORD}"
+        maven = true
+		    ivy {
+		      ivyLayout = '[organization]/[module]/ivy-[revision].xml'
+		      artifactLayout = '[organization]/[module]/[revision]/[module]-[revision](-[classifier]).[ext]'
+		      mavenCompatible = true
+		    }
+	    }
+			defaults {
+			    publishConfigs('archives', 'published')
+			    properties = ['build.status': "$it.project.status".toString()]
+			}
+    }
+    resolve {
+        repository {
+            contextUrl = "${RESOLVE_CONTEXTURL}"
+            repoKey = "${RESOLVE_REPO}"
+            username = "${ARTIFACTORY_USER}"
+            password = "${ARTIFACTORY_PASSWORD}"
+            maven = true
+        }
+    }
+}
+
+// Note that tests only get run when the code changes
+test {
+    testLogging {
+	    // Show that tests are run in the command-line output
+			events "passed", "skipped", "failed"
+    }
+}
+
+// Create source jar
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourceJar
+}
+
+// The Gradle wrapper allows building without Gradle installed
+// See http://www.gradle.org/docs/current/userguide/gradle_wrapper.html
+task wrapper(type: Wrapper) {
+  gradleVersion = '1.12'
+}
+
+/*
+ *	If we're reconfiguring Eclipse, take the opportunity to fix the occasional
+ *	problem where 'Deployment Assembly' is missing from the properties dialog,
+ *	preventing dependency jars from being added to the War and Tomcat classpath.
+ *	http://forums.gradle.org/gradle/topics/my_war_in_eclipse_doesnt_see_jars_in_other_projects
+ */
+eclipse {
+    project {
+        natures 'org.eclipse.wst.common.modulecore.ModuleCoreNature'
+    }
+}
+
+/**************************************************************************************************
+ *
+ *	Copy various resources into the jar file or into separate zip files.
+ */
+task copyWebContent(type: Copy) {
+	from('WebContent')
+	into 'build/classes/main/META-INF/resources'
+}
+task copyConfig(type: Copy) {
+	from('config')
+	into 'build/classes/main/META-INF/tooltwist/config'
+}
+task copyWidgets(type: Copy) {
+	from('widgets')
+	into 'build/classes/main/META-INF/tooltwist/widgets'
+}
+task configZip(type: Zip) {
+	from 'config'
+	classifier = "tooltwist-config"
+}
+task widgetsZip(type: Zip) {
+	from 'widgets'
+	classifier = "tooltwist-widgets"
+}
+task webcontentZip(type: Zip) {
+	from 'WebContent'
+	classifier = "tooltwist-webcontent"
+}
+processResources {
+	// Maybe place resources directly inside the jar file.
+	if (project.hasProperty('PROJECT_DIRECTORIES_IN_JAR') && PROJECT_DIRECTORIES_IN_JAR.toBoolean()) {
+		processResources.dependsOn("copyWebContent")
+		processResources.dependsOn("copyConfig")
+		processResources.dependsOn("copyWidgets")
+	}
+
+	// Create zip files for config, widget and WebContent.
+	if (file('config').isDirectory()) {
+	    processResources.dependsOn("configZip")
+	    project.artifacts { archives configZip }
+	}
+	if (file('widgets').isDirectory()) {
+	    processResources.dependsOn("widgetsZip")
+	    project.artifacts { archives widgetsZip }
+	}
+	if (file('WebContent').isDirectory()) {
+	    processResources.dependsOn("webcontentZip")
+	    project.artifacts { archives webcontentZip }
+	}
+}
