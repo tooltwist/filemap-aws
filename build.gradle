@@ -34,10 +34,10 @@ dependencies {
 	compile group: 'com.tooltwist', name: 'tooltwist', version: TOOLTWIST_VERSION
 	compile group: 'com.tooltwist', name: 'ttStd', version: TOOLTWIST_VERSION
 	compile group: 'com.tooltwist', name: 'ttWbd', version: TOOLTWIST_VERSION
-	//compile 'com.tooltwist:ttWbd:8.3.3-SNAPSHOT@sources'
+	//compile 'com.tooltwist:ttWbd:8.5-SNAPSHOT@sources'
 	*/
 
-	compile group: 'com.tooltwist', name: 'filemap', version: '5.0-SNAPSHOT'
+	compile group: 'com.tooltwist', name: 'filemap', version: '8.5-SNAPSHOT'
 	compile	group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.4.1'
 
 	// Project dependencies
