@@ -4,3 +4,5 @@
 /target
 .gradle
 /bin
+.classpath
+/aws-java-sdk-1.10.40

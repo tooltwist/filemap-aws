@@ -24,11 +24,20 @@ dependencies {
 	
 	/* Dependencies if you have ToolTwist source code installed.
 	compile project(':xdata')
-	compile project(':filemap')
 	compile project(':tooltwist')
 	compile project(':ttWbd')
 	compile project(':ttStd')
 	*/
+	// Decide whether to use source or JAR files
+	if (project.properties['TOOLTWIST_SOURCE_IN_ECLIPSE'] == 'true') {
+		println 'Will use ToolTwist projects in eclipse.'
+		compile project(':filemap')
+	}
+	else
+	{
+		println 'Will use ToolTwist jar files.'
+		compile group: 'com.tooltwist', name: 'filemap', version: TOOLTWIST_VERSION
+	}
 
 	/* ToolTwist Dependencies
 	compile group: 'com.tooltwist', name: 'tooltwist', version: TOOLTWIST_VERSION
@@ -37,10 +46,9 @@ dependencies {
 	//compile 'com.tooltwist:ttWbd:8.3.3-SNAPSHOT@sources'
 	*/
 
-	compile group: 'com.tooltwist', name: 'filemap', version: '5.0-SNAPSHOT'
-	compile	group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.4.1'
 
 	// Project dependencies
+	compile	group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.4.1'
 /*
 	compile group: 'net.sourceforge.htmlcleaner', name: 'htmlcleaner', version: '2.2'
 	compile group: 'org.xhtmlrenderer', name: 'core-renderer', version: 'R8pre2'
